@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Template • TodoMVC</title>
+	<link rel="stylesheet" href="node_modules/todomvc-common/base.css">
+	<link rel="stylesheet" href="node_modules/todomvc-app-css/index.css">
+	<!-- CSS overrides - remove if you don't need it -->
+	<link rel="stylesheet" href="css/app.css">
+	<!-- 1. 引入vue.js -->
+	<script src="js/vue2.js"></script>
+</head>
+
+<body>
+	<section class="todoapp" id="app">
+		<header class="header">
+			<h1>todos</h1>
+			<input class="new-todo" placeholder="What needs to be done?" autofocus v-model="val" @keyup.enter="add">
+			<!-- 键盘里的enter键 -->
+		</header>
+		<!-- This section should be hidden by default and shown when there are todos -->
+		<section class="main">
+			<input id="toggle-all" v-model="toggle" @click="toggleAll"
+			 class="toggle-all" type="checkbox">
+			<label for="toggle-all">Mark all as complete</label>
+
+			<!-- 历史列表项 -->
+
+			<ul class="todo-list">
+				<!-- These are here just to show the structure of the list items -->
+				<!-- List items should get the class `editing` when editing and `completed` when marked as completed -->
+				<!-- <li class="completed">
+						<div class="view">
+							<input class="toggle" type="checkbox" checked>
+							<label>Taste JavaScript</label>
+							<button class="destroy"></button>
+						</div>
+						<input class="edit" value="Create a TodoMVC template">
+					</li> -->
+
+				<li v-for="(item,i) in list" :key="item.id" :class="['todo',{'editing':item.editing},{'completed':item.completed}]"
+				 @dblclick="edit(item.id)">
+					<div class="view">
+						<!-- v-model代替了checkbox的checked特性，实现双向绑定 -->
+						<input class="toggle" type="checkbox"  v-model="item.completed">
+
+						<label>{{item.val}}</label>
+
+						<button class="destroy" @click="del(item.id)"></button>
+					</div>
+					<input class="edit" v-model="item.val" @blur="done(item.id)" v-dblfocus @keyup.enter="done(item.id)">
+				</li>
+			</ul>
+
+		</section>
+
+		<!-- This footer should hidden by default and shown when there are todos -->
+		<footer class="footer">
+			<!-- This should be `0 items left` by default -->
+			<span class="todo-count"><strong>0</strong> item left</span>
+			<!-- Remove this if you don't implement routing -->
+			<ul class="filters">
+				<li>
+					<a class="selected" href="#/">All</a>
+				</li>
+				<li>
+					<a href="#/active">Active</a>
+				</li>
+				<li>
+					<a href="#/completed">Completed</a>
+				</li>
+			</ul>
+			<!-- Hidden if no completed items are left ↓ -->
+			<button class="clear-completed">Clear completed</button>
+		</footer>
+	</section>
+	<footer class="info">
+		<p>Double-click to edit a todo</p>
+		<!-- Remove the below line ↓ -->
+		<p>Template by <a href="http://sindresorhus.com">Sindre Sorhus</a></p>
+		<!-- Change this out with your name and url ↓ -->
+		<p>Created by <a href="http://todomvc.com">you</a></p>
+		<p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
+	</footer>
+	<!-- Scripts here. Don't remove ↓ -->
+	<!-- <script src="node_modules/todomvc-common/base.js"></script> -->
+	<script src="js/app.js"></script>
+
+	<script>
+		var vm = new Vue({
+			el: '#app',
+			data: {
+				val: '',
+				editing: false,
+				completed: false,
+				toggle:false,
+				list: [{
+						id: 1,
+						val: 'Taste JavaScript',
+						completed: false,
+						editing: false,
+					},
+					{
+						id: 2,
+						val: '睡觉',
+						completed: false,
+						editing: false,
+					}
+				],
+			},
+			methods: {
+				//内容添加
+				add() {
+					var info = {
+						id: +new Date(),
+						val: this.val,
+						completed: this.completed,
+						editing: this.editing,
+					}
+					this.list.push(info);
+					this.val = '';
+				},
+
+				//历史纪录内列表删除
+				del(id) {
+					this.list.some((item, i) => {
+						if (item.id == id) {
+							this.list.splice(i, 1);
+							return true;
+						}
+					})
+
+				},
+
+				//编辑框的跳出
+				edit(id) {
+					this.list.some((item, i) => {
+						if (item.id == id) {
+							item['editing'] = true;
+							return true;
+						}
+					})
+					// var index = this.list.findIndex(item=>{
+					// 	if(item.id == id);
+					// 	return true;
+					// })
+					// this.list[index].flag = true;
+				},
+
+				//退出编辑状态
+				done(id) {
+					this.list.some(item => {
+						if (item.id == id) {
+							item['editing'] = false;
+							return true;
+						}
+					})
+				},
+
+				//全选全不选
+				toggleAll() {
+					this.list.forEach((item,i) => {
+						item.completed = this.toggle;
+
+					})
+				}
+
+				
+			},
+
+			directives: {
+				//实现双击自动获取光标
+				dblfocus: {
+					update: (el, binding) => {
+						//dblfocus
+						if (binding.name) {
+							// console.log('fff');
+							el.focus();
+						}
+					}
+				},
+
+
+			}
+
+		})
+		//编辑功能实现
+		// directives:{
+		// 	dblclick:{
+		// 		inserted:(el,binding)=>{
+		// 			el.classList.add('editing');
+		// 		}
+		// 	}
+		// }
+
+		
+		/*
+		checkbox的js功能的实现，依靠v-model实现双向绑定
+		v-model粗存checkbox的checked状态，但是checked的状态怎么动态改变呢
+		这里用到了事件目标元素e.target，将目标元素的checked值存储，
+		赋值给list下的存储completed状态的元素，li元素的类样式completed随着这个元素的值的改变而变化
+		*/
+
+
+
+
+	</script>
+</body>
+
+</html>
